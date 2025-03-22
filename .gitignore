@@ -1,0 +1,21 @@
+# Dependencies
+/node_modules
+
+# Environment variables
+.env
+
+# Build and output directories
+/dist
+
+# Editor and IDE files
+/.idea
+/.vscode
+
+# Prisma
+/prisma/dev.db
+
+# Screenshots
+/screenshots
+
+# Playwright
+authState.json

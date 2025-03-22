@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider        = "prisma-client-js"
+    binaryTargets   = ["native"]
+    previewFeatures = []
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = env("DATABASE_URL")
+}
+
+// Generic product names like "картошка", "картофель", "спагетти"
+model GenericProduct {
+    id Int @id @default(autoincrement())
+
+    aliases          GenericProductAlias[] // Alternative names for this generic product
+    specificProducts SpecificProduct[] // Specific product variants of this generic product
+}
+
+// Alternative names/aliases for generic products
+model GenericProductAlias {
+    id Int @id @default(autoincrement())
+
+    name String @unique
+
+    genericProductId Int
+    genericProduct   GenericProduct @relation(fields: [genericProductId], references: [id], onDelete: Cascade)
+
+    @@index([genericProductId])
+}
+
+// Specific products like "картофель мытый 2.5кг" or "спагетти Makfa 450г"
+model SpecificProduct {
+    id Int @id @default(autoincrement())
+
+    name     String @unique
+    priority Int    @default(0) // Higher value means higher priority
+
+    genericProductId Int
+    genericProduct   GenericProduct @relation(fields: [genericProductId], references: [id])
+
+    @@index([genericProductId])
+}

@@ -1,0 +1,44 @@
+{
+    "name": "shestyorochka",
+    "version": "0.0.1",
+    "description": "Shestyorochka project",
+    "main": "dist/index.js",
+    "scripts": {
+        "dev": "nodemon --watch 'src/**/*.ts' --exec tsx src/index.ts",
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "postinstall": "pnpm exec playwright install-deps && pnpm exec playwright install chromium",
+        "ollama:gemma3": "ollama run gemma3:1b-it-fp16",
+        "ollama:whisper": "ollama run dimavz/whisper-tiny",
+        "prisma:generate": "prisma generate",
+        "prisma:migrate:dev": "prisma migrate dev",
+        "prisma:migrate:deploy": "prisma migrate deploy",
+        "prisma:studio": "prisma studio",
+        "prisma:seed": "ts-node prisma/seed.ts",
+        "prisma:reset": "prisma migrate reset --force"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/js-yaml": "^4.0.9",
+        "@types/node": "^22.13.10",
+        "@types/node-fetch": "^2.6.12",
+        "dotenv": "^16.4.7",
+        "js-yaml": "^4.1.0",
+        "nodemon": "^3.1.9",
+        "prisma": "6.5.0",
+        "tsx": "^4.19.3",
+        "typescript": "^5.8.2"
+    },
+    "dependencies": {
+        "@prisma/client": "6.5.0",
+        "grammy": "^1.35.0",
+        "playwright": "1.49.1",
+        "queue": "^7.0.0",
+        "rebrowser-playwright": "1.49.1"
+    },
+    "prisma": {
+        "seed": "ts-node prisma/seed.ts"
+    }
+}
