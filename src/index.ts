@@ -1,12 +1,33 @@
-import 'dotenv/config'
 import { createBot } from './bot'
+import * as dotenv from 'dotenv'
 
-const bot = createBot()
-bot.start()
+// Load environment variables
+dotenv.config()
 
-// Handle application termination
-process.on('SIGINT', async () => {
-    console.log('Shutting down...')
-    await bot.stop()
-    process.exit(0)
+async function main() {
+    console.log('Starting application...')
+
+    // Create and start the bot
+    const bot = createBot()
+    await bot.start()
+
+    console.log('Bot started successfully')
+
+    // Handle shutdown gracefully
+    process.once('SIGINT', async () => {
+        console.log('SIGINT received, shutting down...')
+        await bot.stop()
+        process.exit(0)
+    })
+
+    process.once('SIGTERM', async () => {
+        console.log('SIGTERM received, shutting down...')
+        await bot.stop()
+        process.exit(0)
+    })
+}
+
+main().catch((error) => {
+    console.error('Fatal error:', error)
+    process.exit(1)
 })
