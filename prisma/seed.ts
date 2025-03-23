@@ -15,7 +15,7 @@ interface YamlData {
 }
 
 function loadDataFromYaml(): YamlData {
-    const yamlFilePath = path.join(__dirname, 'data.yaml')
+    const yamlFilePath = path.join(__dirname, '../products.yaml')
     const fileContents = fs.readFileSync(yamlFilePath, 'utf8')
     return yaml.load(fileContents) as YamlData
 }

@@ -24,3 +24,16 @@ export interface Product {
     aliases: string[]
     specificProducts: string[]
 }
+
+// LLM response item representing a product action from LLM
+export interface LlmActionItem {
+    name: string
+    count: string // Optional now - can be a number, "MIN", or "ALL"
+    unit: string // Optional unit (kg, pcs, etc.)
+}
+
+// LLM response interface representing the structured output from LLM
+export interface LlmResponse {
+    add: LlmActionItem[]
+    remove: string[] // Array of strings (product names)
+}

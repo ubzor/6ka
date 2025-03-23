@@ -1,36 +1,35 @@
-import * as fs from 'fs'
-import * as path from 'path'
-import * as yaml from 'js-yaml'
+import fs from 'fs'
+import path from 'path'
+import { parse } from 'yaml'
+import { Product } from '../types'
 
 export class FileLoader {
     /**
-     * Loads the products data from the YAML file
+     * Loads the LLM prompt from the prompt.txt file
+     * @returns The prompt text
      */
-    static loadProductsData(): any {
+    static loadLlmPrompt(): string {
         try {
-            const dataPath = path.join(__dirname, '../../prisma/data.yaml')
-            const fileContents = fs.readFileSync(dataPath, 'utf8')
-            const productsData = yaml.load(fileContents)
-            console.log('Products data loaded successfully')
-            return productsData
+            const promptPath = path.resolve(__dirname, '../../prompt.txt')
+            return fs.readFileSync(promptPath, 'utf8')
         } catch (error) {
-            console.error('Error loading products data:', error)
-            return {}
+            console.error('Error loading LLM prompt:', error)
+            return 'Error loading prompt. Using default empty prompt.'
         }
     }
 
     /**
-     * Loads the LLM prompt from the file system
+     * Loads product data from the products.yaml file
+     * @returns The parsed products data
      */
-    static loadLlmPrompt(): string {
+    static loadProductsData(): { products: Product[] } {
         try {
-            const promptPath = path.join(__dirname, '../prompt.txt')
-            const prompt = fs.readFileSync(promptPath, 'utf8')
-            console.log('LLM prompt loaded successfully')
-            return prompt
+            const productsPath = path.resolve(__dirname, '../../products.yaml')
+            const fileContents = fs.readFileSync(productsPath, 'utf8')
+            return parse(fileContents) as { products: Product[] }
         } catch (error) {
-            console.error('Error loading LLM prompt:', error)
-            return 'Failed to load prompt. Please check prompt.txt file.'
+            console.error('Error loading products data:', error)
+            return { products: [] }
         }
     }
 }

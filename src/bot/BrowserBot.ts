@@ -1,6 +1,6 @@
 import { Bot } from 'grammy'
 import type { Browser, Page } from 'rebrowser-playwright'
-import { BotState, CartItem } from '../types'
+import { BotState, CartItem, Product } from '../types'
 import { setupHandlers } from './handlers'
 import { FileLoader } from '../utils/FileLoader'
 import { QueueManager } from '../utils/QueueManager'
@@ -13,7 +13,7 @@ export class BrowserBot {
     #queueManager: QueueManager
     #cartItems: CartItem[] = [] // New private variable to store cart items
     #llmPrompt: string = '' // Store the LLM prompt here
-    #productsData: any = {} // New private variable for storing data from YAML file
+    #productsData: { products: Product[] } = { products: [] } // New private variable for storing data from YAML file
 
     constructor(token: string) {
         this.#bot = new Bot(token)

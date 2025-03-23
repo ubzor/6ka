@@ -180,7 +180,7 @@ products:
     - aliases:
           - Тесто для пиццы
           - Основа для пиццы
-    - specificProducts:
+      specificProducts:
           - Основа Рестория для пиццы замороженная 350г
 
     # TODO: хлебцы

@@ -1,16 +1,21 @@
+import { FileLoader } from '../utils/FileLoader'
+
 /**
  * Makes an API call to the LLM endpoint
  * @param userText The user's text to send to the LLM
- * @param systemPrompt The system prompt to provide context to the LLM
+ * @param systemPrompt The system prompt to provide context to the LLM (currently unused)
  * @returns The response from the LLM
  */
 export async function callLlmApi(
     userText: string,
-    systemPrompt: string
+    systemPrompt: string // kept for backward compatibility
 ): Promise<string> {
     try {
-        // Combine the system prompt with the user's text
-        const fullPrompt = `${systemPrompt}\n${userText}`
+        // Load prompt directly from file instead of using the passed systemPrompt
+        const promptFromFile = FileLoader.loadLlmPrompt()
+
+        // Replace placeholders in the prompt with actual values
+        let fullPrompt = promptFromFile.replace('{{user_input}}', userText)
 
         const response = await fetch('http://0.0.0.0:11434/api/generate', {
             method: 'POST',
@@ -32,7 +37,8 @@ export async function callLlmApi(
 
         // Extract the response text from the API response
         if (data && data.response) {
-            return data.response
+            // Clean the response to handle markdown code blocks
+            return cleanLlmResponse(data.response)
         } else {
             throw new Error('Invalid response format from LLM API')
         }
@@ -40,4 +46,24 @@ export async function callLlmApi(
         console.error('Error calling LLM API:', error)
         throw new Error('Failed to get response from LLM API')
     }
+}
+
+/**
+ * Cleans the LLM response by extracting JSON content from markdown code blocks if present
+ * @param response The raw response from the LLM
+ * @returns Cleaned response with just the JSON content
+ */
+function cleanLlmResponse(response: string): string {
+    // Check if response contains markdown code blocks
+    const jsonBlockRegex = /```(?:json)?\s*({[\s\S]*?})\s*```/m
+    const match = response.match(jsonBlockRegex)
+
+    if (match && match[1]) {
+        // Return just the JSON content within the code block
+        return match[1].trim()
+    }
+
+    // If no code blocks found, return the original response
+    // This allows handling both raw JSON and markdown-formatted responses
+    return response.trim()
 }

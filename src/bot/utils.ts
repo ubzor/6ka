@@ -1,5 +1,5 @@
 import { Context, InlineKeyboard } from 'grammy'
-import { BotState, CartItem } from '../types'
+import { BotState, CartItem, LlmResponse, LlmActionItem } from '../types'
 import {
     isUserLoggedIn,
     inputVerificationCode,
@@ -7,9 +7,10 @@ import {
     parseCartItems
 } from '../browser'
 import { callLlmApi } from './llm'
+import { BrowserBot } from './BrowserBot'
 
 export async function processVerificationCode(
-    bot: any,
+    bot: BrowserBot,
     ctx: Context,
     code: string
 ): Promise<void> {
@@ -55,19 +56,19 @@ export async function processVerificationCode(
 }
 
 export async function processLlmRequest(
-    bot: any,
+    bot: BrowserBot,
     ctx: Context,
     text: string
 ): Promise<void> {
     try {
         await ctx.reply('Processing your request with AI...')
 
-        // Get the AI response with the combined prompt and user text
+        // Get the AI response with just the prompt and text, without cart items
         const response = await callLlmApi(text, bot.llmPrompt)
 
         try {
             // Try to parse the response as JSON
-            const parsedResponse = JSON.parse(response)
+            const parsedResponse = JSON.parse(response) as LlmResponse
 
             // Send the parsed response in a more readable format
             let replyMessage = "Here's what I understood:\n\n"
@@ -75,13 +76,15 @@ export async function processLlmRequest(
             // Format the "add" items
             if (parsedResponse.add && parsedResponse.add.length > 0) {
                 replyMessage += '✅ Adding to cart:\n'
-                parsedResponse.add.forEach((item: any) => {
+                parsedResponse.add.forEach((item: LlmActionItem) => {
                     if (item.count === 'MIN') {
                         replyMessage += `• ${item.name}\n`
-                    } else {
+                    } else if (item.count) {
                         replyMessage += `• ${item.name}: ${item.count} ${
                             item.unit || ''
                         }\n`
+                    } else {
+                        replyMessage += `• ${item.name}\n`
                     }
                 })
                 replyMessage += '\n'
@@ -90,26 +93,10 @@ export async function processLlmRequest(
             // Format the "remove" items
             if (parsedResponse.remove && parsedResponse.remove.length > 0) {
                 replyMessage += '❌ Removing from cart:\n'
-                parsedResponse.remove.forEach((item: any) => {
-                    if (item.count === 'ALL') {
-                        replyMessage += `• All ${item.name}\n`
-                    } else {
-                        replyMessage += `• ${item.name}: ${item.count} ${
-                            item.unit || ''
-                        }\n`
-                    }
+                parsedResponse.remove.forEach((itemName) => {
+                    replyMessage += `• ${itemName}\n`
                 })
                 replyMessage += '\n'
-            }
-
-            // Format the "set" items
-            if (parsedResponse.set && parsedResponse.set.length > 0) {
-                replyMessage += '⚖️ Setting quantity:\n'
-                parsedResponse.set.forEach((item: any) => {
-                    replyMessage += `• ${item.name}: ${item.count} ${
-                        item.unit || ''
-                    }\n`
-                })
             }
 
             await ctx.reply(replyMessage)
@@ -148,7 +135,7 @@ export function formatCartMessage(cartItems: CartItem[]): string {
 }
 
 export async function checkAndHandleCartStatus(
-    bot: any,
+    bot: BrowserBot,
     ctx: Context
 ): Promise<void> {
     if (!bot.page) {
