@@ -1,4 +1,4 @@
-import { FileLoader } from '../utils/FileLoader'
+// import { FileLoader } from '../utils/FileLoader'
 
 /**
  * Makes an API call to the LLM endpoint
@@ -12,10 +12,10 @@ export async function callLlmApi(
 ): Promise<string> {
     try {
         // Load prompt directly from file instead of using the passed systemPrompt
-        const promptFromFile = FileLoader.loadLlmPrompt()
+        // const promptFromFile = FileLoader.loadLlmPrompt()
 
         // Replace placeholders in the prompt with actual values
-        let fullPrompt = promptFromFile.replace('{{user_input}}', userText)
+        let fullPrompt = systemPrompt.replace('{{user_input}}', userText)
 
         const response = await fetch('http://0.0.0.0:11434/api/generate', {
             method: 'POST',

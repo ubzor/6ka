@@ -1,5 +1,11 @@
 import { Context, InlineKeyboard } from 'grammy'
-import { BotState, CartItem, LlmResponse, LlmActionItem } from '../types'
+import {
+    BotState,
+    CartItem,
+    LlmResponse,
+    LlmActionItem,
+    Product
+} from '../types'
 import {
     isUserLoggedIn,
     inputVerificationCode,
@@ -72,6 +78,8 @@ export async function processLlmRequest(
 
             // Send the parsed response in a more readable format
             let replyMessage = "Here's what I understood:\n\n"
+            let allMatchingItems: CartItem[] = []
+            let specificProductsToShow: string[] = []
 
             // Format the "add" items
             if (parsedResponse.add && parsedResponse.add.length > 0) {
@@ -86,6 +94,31 @@ export async function processLlmRequest(
                     } else {
                         replyMessage += `• ${item.name}\n`
                     }
+
+                    // Find matching products in productsData
+                    if (bot.productsData && bot.productsData.products) {
+                        const matchingProducts = findMatchingProducts(
+                            item.name,
+                            bot.productsData.products
+                        )
+
+                        // Add specific products to the list, avoiding duplicates
+                        matchingProducts.forEach((product) => {
+                            product.specificProducts.forEach(
+                                (specificProduct) => {
+                                    if (
+                                        !specificProductsToShow.includes(
+                                            specificProduct
+                                        )
+                                    ) {
+                                        specificProductsToShow.push(
+                                            specificProduct
+                                        )
+                                    }
+                                }
+                            )
+                        })
+                    }
                 })
                 replyMessage += '\n'
             }
@@ -93,13 +126,50 @@ export async function processLlmRequest(
             // Format the "remove" items
             if (parsedResponse.remove && parsedResponse.remove.length > 0) {
                 replyMessage += '❌ Removing from cart:\n'
-                parsedResponse.remove.forEach((itemName) => {
+
+                for (const itemName of parsedResponse.remove) {
                     replyMessage += `• ${itemName}\n`
-                })
+
+                    // Find matching items in the cart and collect them
+                    if (bot.cartItems && bot.cartItems.length > 0) {
+                        const matchingItems = findMatchingItemsInCart(
+                            itemName,
+                            bot.cartItems
+                        )
+
+                        // Add matching items to the collection, avoiding duplicates
+                        matchingItems.forEach((item) => {
+                            if (
+                                !allMatchingItems.some(
+                                    (existingItem) =>
+                                        existingItem.name === item.name
+                                )
+                            ) {
+                                allMatchingItems.push(item)
+                            }
+                        })
+                    }
+                }
                 replyMessage += '\n'
             }
 
+            // First send the main response
             await ctx.reply(replyMessage)
+
+            // Send matching specific products if any
+            if (specificProductsToShow.length > 0) {
+                const specificProductsMessage = formatSpecificProductsMessage(
+                    specificProductsToShow
+                )
+                await ctx.reply(specificProductsMessage)
+            }
+
+            // Then send matching cart items in a separate message if there are any
+            if (allMatchingItems.length > 0) {
+                const matchingItemsMessage =
+                    formatMatchingItemsMessage(allMatchingItems)
+                await ctx.reply(matchingItemsMessage)
+            }
         } catch (parseError) {
             // If parsing fails, send the raw response
             console.error('Error parsing LLM response:', parseError)
@@ -113,6 +183,76 @@ export async function processLlmRequest(
             'Sorry, I encountered an error while processing your request with the AI model.'
         )
     }
+}
+
+/**
+ * Format a message containing specific products
+ */
+function formatSpecificProductsMessage(specificProducts: string[]): string {
+    let message = 'These specific products match your request:\n\n'
+    specificProducts.forEach((product, index) => {
+        message += `${index + 1}. ${product}\n`
+    })
+
+    return message
+}
+
+/**
+ * Find products in productsData that match all words in the search query in their aliases
+ */
+function findMatchingProducts(
+    searchQuery: string,
+    products: Product[]
+): Product[] {
+    // Normalize the search query: lowercase and split into individual words
+    const searchWords = searchQuery
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((word) => word.length > 0)
+
+    return products.filter((product) => {
+        // Check if any alias contains all search words
+        return product.aliases.some((alias) => {
+            const aliasLower = alias.toLowerCase()
+            return searchWords.every((word) => aliasLower.includes(word))
+        })
+    })
+}
+
+/**
+ * Format a message containing only the names of matching items
+ */
+function formatMatchingItemsMessage(items: CartItem[]): string {
+    if (items.length === 0) {
+        return 'No matching items found in your cart.'
+    }
+
+    let message = 'These items in your cart match your removal request:\n\n'
+    items.forEach((item, index) => {
+        message += `${index + 1}. ${item.name}\n`
+    })
+
+    return message
+}
+
+/**
+ * Find items in the cart that match all words in the search query
+ */
+function findMatchingItemsInCart(
+    searchQuery: string,
+    cartItems: CartItem[]
+): CartItem[] {
+    // Normalize the search query: lowercase and split into individual words
+    const searchWords = searchQuery
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((word) => word.length > 0)
+
+    return cartItems.filter((item) => {
+        const itemNameLower = item.name.toLowerCase()
+        // Item matches if all words in the search query are present in the item name
+        return searchWords.every((word) => itemNameLower.includes(word))
+    })
 }
 
 export function formatCartMessage(cartItems: CartItem[]): string {
